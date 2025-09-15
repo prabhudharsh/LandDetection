@@ -104,4 +104,5 @@ def detect():
 if __name__ == '__main__':
     # Runs the Flask app
     # Use 0.0.0.0 to make it accessible on your local network
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5001, debug=True)
+
