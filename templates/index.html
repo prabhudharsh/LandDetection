@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satellite Image AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Subtle gradient background inspired by the image */
+            background-color: #F9F8FF;
+            background-image: linear-gradient(180deg, #F9F8FF 0%, #F0EEFF 100%);
+        }
+        /* Style for the drop zone highlight on drag over */
+        .drag-over {
+            border-color: #6d28d9; /* violet-700 */
+            transform: scale(1.02);
+        }
+        /* Hide the default file input button */
+        #imageUpload {
+            display: none;
+        }
+        /* Transitions for smooth animations */
+        #imagePreviewContainer, #result, #error {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .fade-in {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+        .hidden-start {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="min-h-screen flex flex-col">
+        <header class="w-full">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="text-2xl font-bold text-gray-900">
+                    Land Detection
+                </div>
+                <div class="flex items-center space-x-4">
+                </div>
+            </nav>
+        </header>
+
+        <main class="flex-grow flex flex-col items-center justify-center text-center px-4">
+            
+            <div class="flex flex-wrap justify-center gap-3 mb-8">
+                <span class="bg-white border border-violet-100 text-violet-700 text-sm font-medium py-2 px-4 rounded-full flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                    Upload images
+                </span>
+                <span class="bg-white border border-violet-100 text-violet-700 text-sm font-medium py-2 px-4 rounded-full flex items-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 4.293a1 1 0 011.414 0l.001.001a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 11.586l7.293-7.293z" /></svg>
+                     Good labels
+                </span>
+                 <span class="bg-white border border-violet-100 text-violet-700 text-sm font-medium py-2 px-4 rounded-full flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm10 2a1 1 0 10-2 0v2a1 1 0 102 0V4zm-4 4a1 1 0 112 0v2a1 1 0 11-2 0V8zm-4 4a1 1 0 10-2 0v2a1 1 0 102 0v-2z" clip-rule="evenodd" /></svg>
+                     :)
+                </span>
+            </div>
+
+            <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 max-w-4xl">
+                Landscape Detection
+            </h1>
+            <p class="mt-4 text-xl text-gray-600 max-w-2xl">
+                Paste an satellite image of the location you want to label.
+            </p>
+
+             <div class="mt-10 flex flex-col sm:flex-row items-center gap-4">
+                 <button id="detectBtn" class="bg-violet-600 text-white font-bold text-lg py-3 px-8 rounded-lg shadow-sm hover:shadow-lg hover:bg-violet-700 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100 transition-all w-64" disabled>
+                    <div class="flex items-center justify-center">
+                        <span id="btn-text">Identify Landscape</span>
+                        <svg id="spinner" class="animate-spin h-6 w-6 text-white hidden ml-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </button>
+                <button id="clearBtn" class="bg-white text-gray-700 font-bold text-lg py-3 px-8 rounded-lg border border-gray-300 hover:border-gray-400 hover:text-gray-900 transition-all shadow-sm hidden w-64 sm:w-auto">
+                    Clear Image
+                </button>
+            </div>
+
+            <div class="mt-12 w-full max-w-2xl">
+                 <div id="dropZone" class="bg-white/70 border border-gray-200 rounded-xl p-6 text-center cursor-pointer transition-all hover:border-violet-400 shadow-sm">
+                    <div id="upload-prompt">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <p class="mt-4 text-lg text-gray-700">
+                            <span class="font-semibold text-violet-600">Drop your image here</span>
+                        </p>
+                        <p class="text-sm text-gray-500 mt-1">or click to upload, or simply paste</p>
+                    </div>
+                    <div id="imagePreviewContainer" class="hidden relative">
+                        <img id="imagePreview" src="#" alt="Image Preview" class="max-h-80 mx-auto rounded-lg shadow-md"/>
+                    </div>
+                    <input type="file" id="imageUpload" accept="image/*">
+                </div>
+
+                 <div id="result" class="mt-6 text-2xl font-semibold text-violet-800 h-8 hidden-start"></div>
+                 <div id="error" class="mt-4 text-red-600 font-medium h-6 hidden-start"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const detectBtn = document.getElementById('detectBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
+        const btnText = document.getElementById('btn-text');
+        const spinner = document.getElementById('spinner');
+
+        let imageDataUrl = null;
+
+        // --- Event Listeners ---
+
+        dropZone.addEventListener('click', () => imageUpload.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        imageUpload.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+        
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    handleFile(items[i].getAsFile());
+                    break;
+                }
+            }
+        });
+
+        clearBtn.addEventListener('click', resetUI);
+
+        detectBtn.addEventListener('click', async () => {
+            if (!imageDataUrl) {
+                showError('Please upload an image first.');
+                return;
+            }
+            setLoadingState(true);
+
+            try {
+                // Mock API Call for demonstration
+                // Replace this with your actual fetch call
+                await new Promise(resolve => setTimeout(resolve, 1500)); 
+                // const mockPredictions = ['Forest', 'Sea', 'City', 'Desert', 'Clouds'];
+                // const prediction = mockPredictions[Math.floor(Math.random() * mockPredictions.length)];
+                // showResult(`This looks like: <strong>${prediction}</strong>`);
+
+                // Your actual fetch call:
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageDataUrl })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                showResult(`This looks like: <strong>${data.prediction}</strong>`);
+
+            } catch (error) {
+                console.error('Detection error:', error);
+                showError(error.message || 'Failed to get a prediction.');
+            } finally {
+                setLoadingState(false);
+            }
+        });
+
+        // --- Helper Functions ---
+
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageDataUrl = e.target.result;
+                    imagePreview.src = imageDataUrl;
+                    uploadPrompt.classList.add('hidden');
+                    imagePreviewContainer.classList.remove('hidden');
+                    detectBtn.disabled = false;
+                    clearBtn.classList.remove('hidden');
+                    clearMessages();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showError('Please upload a valid image file.');
+            }
+        }
+        
+        function setLoadingState(isLoading) {
+            detectBtn.disabled = isLoading;
+            clearBtn.disabled = isLoading;
+            detectBtn.classList.toggle('opacity-75', isLoading);
+            if (isLoading) {
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function resetUI() {
+            imageUpload.value = ''; // Clear the file input
+            imageDataUrl = null;
+            imagePreview.src = '#';
+            uploadPrompt.classList.remove('hidden');
+            imagePreviewContainer.classList.add('hidden');
+            detectBtn.disabled = true;
+            clearBtn.classList.add('hidden');
+            clearMessages();
+        }
+
+        function showResult(message) {
+            clearMessages();
+            resultDiv.innerHTML = message;
+            resultDiv.classList.add('fade-in');
+        }
+
+        function showError(message) {
+            clearMessages();
+            errorDiv.textContent = message;
+            errorDiv.classList.add('fade-in');
+        }
+
+        function clearMessages() {
+            resultDiv.innerHTML = '';
+            errorDiv.textContent = '';
+            resultDiv.classList.remove('fade-in');
+            errorDiv.classList.remove('fade-in');
+        }
+    </script>
+</body>
+</html>
