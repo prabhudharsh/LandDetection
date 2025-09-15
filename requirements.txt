@@ -1,0 +1,8 @@
+torch>=2.0.0
+torchvision>=0.14.0
+torchaudio>=0.13.0
+numpy
+Flask
+torch
+torchvision
+Pillow
